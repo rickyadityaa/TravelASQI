@@ -14,7 +14,7 @@ body {
 }
 
 .app {
-  margin: 0;
+  margin-left: 499px;
   min-height: 100vh;
   padding-bottom: 80px;
   background: #ffffff;
@@ -1076,7 +1076,7 @@ body {
 }
 
 /* Responsive Design */
-@media (max-width: 480px) {
+@media (max-width: 789px) {
   .container {
     padding: 0 16px;
   }
