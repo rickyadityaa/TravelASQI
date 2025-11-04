@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 function App() {
@@ -14,6 +14,15 @@ function App() {
   const [rentalDays, setRentalDays] = useState(1)
   const [pickupLocation, setPickupLocation] = useState('')
   const [selectedTerminal, setSelectedTerminal] = useState('')
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authMode, setAuthMode] = useState('login')
+  const [loginData, setLoginData] = useState({ email: '', password: '' })
+  const [registerData, setRegisterData] = useState({ 
+    fullName: '', 
+    email: '', 
+    password: '', 
+    confirmPassword: '' 
+  })
 
   // Data terminal Indonesia lengkap
   const terminals = [
@@ -71,38 +80,229 @@ function App() {
     { code: 'KNO', name: 'Bandara Kualanamu', city: 'Medan' }
   ]
 
-  // Fungsi untuk handle service click
+  // Data promo
+  const promos = [
+    { id: 1, route: 'Bandung - Jakarta', price: '60.000', duration: '6-8 JAM', terminal: 'Terminal Leuwipanjang → Terminal Pulogadung', discount: '20%' },
+    { id: 2, route: 'Jakarta - Yogyakarta', price: '85.000', duration: '8-10 JAM', terminal: 'Terminal Kampung Rambutan → Terminal Giwangan', discount: '15%' },
+    { id: 3, route: 'Surabaya - Malang', price: '45.000', duration: '2-3 JAM', terminal: 'Terminal Purabaya → Terminal Arjosari', discount: '25%' },
+    { id: 4, route: 'Semarang - Solo', price: '35.000', duration: '1-2 JAM', terminal: 'Terminal Terboyo → Terminal Tirtonadi', discount: '30%' }
+  ]
+
+  // Data ASQI Care
+  const careServices = [
+    { id: 1, icon: '📞', title: 'Customer Service 24/7', description: 'Tim kami siap membantu Anda kapan saja', phone: '0804-1234-5678', color: '#dc2626' },
+    { id: 2, icon: '❓', title: 'FAQ & Bantuan', description: 'Temukan jawaban untuk pertanyaan umum', link: 'Lihat FAQ', color: '#2563eb' },
+    { id: 3, icon: '🚨', title: 'Bantuan Darurat', description: 'Bantuan cepat dalam situasi darurat', phone: '112', color: '#dc2626' },
+    { id: 4, icon: '💬', title: 'Live Chat', description: 'Chat langsung dengan customer service', link: 'Mulai Chat', color: '#059669' }
+  ]
+
+  // Fungsi untuk handle authentication
+  const handleLogin = (e) => {
+    e.preventDefault()
+    setIsLoggedIn(true)
+    setShowAuthModal(false)
+    setLoginData({ email: '', password: '' })
+  }
+
+  const handleRegister = (e) => {
+    e.preventDefault()
+    setIsLoggedIn(true)
+    setShowAuthModal(false)
+    setRegisterData({ fullName: '', email: '', password: '', confirmPassword: '' })
+  }
+
+  const handleLogout = () => {
+    setIsLoggedIn(false)
+  }
+
+  const switchAuthMode = () => {
+    setAuthMode(authMode === 'login' ? 'register' : 'login')
+  }
+
+  const openAuthModal = (mode = 'login') => {
+    setAuthMode(mode)
+    setShowAuthModal(true)
+  }
+
+  const handleOrderNow = () => {
+    if (!isLoggedIn) {
+      openAuthModal('login')
+    } else {
+      alert('Silakan pilih layanan untuk memulai pemesanan!')
+    }
+  }
+
+  const handleFacebookAuth = () => {
+    window.open('https://facebook.com', '_blank')
+  }
+
+  // Fungsi untuk handle service click - SEMUA FITUR DITAMBAHKAN KEMBALI
   const handleServiceClick = (service, type = '') => {
     setSelectedService(service)
     setServiceType(type)
   }
 
-  // Kalkulasi harga berdasarkan jarak dan jenis layanan
-  const calculatePrice = (from, to, serviceType, vehicleType = null) => {
-    const fromCity = cities.find(city => city.name === from)
-    const toCity = cities.find(city => city.name === to)
-    
-    if (!fromCity || !toCity) return 0
-    
-    const basePrice = Math.abs(fromCity.basePrice - toCity.basePrice) * 1.5
-    
-    switch (serviceType) {
-      case 'shuttle':
-        return Math.max(50000, basePrice)
-      case 'airport-shuttle':
-        return Math.max(75000, basePrice * 1.2)
-      case 'kirim-paket':
-        return Math.max(30000, basePrice * 0.8)
-      case 'sewa-armada':
-        const vehicle = vehicles.find(v => v.id === vehicleType)
-        return vehicle ? vehicle.basePrice + (basePrice * 2) : 0
-      default:
-        return basePrice
+  // Close modal ketika klik outside
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showAuthModal) {
+        setShowAuthModal(false)
+      }
     }
+
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [showAuthModal])
+
+  // Komponen Auth Modal
+  const AuthModal = () => {
+    if (!showAuthModal) return null
+
+    return (
+      <div 
+        className="auth-modal-overlay"
+        onClick={() => setShowAuthModal(false)}
+      >
+        <div 
+          className="auth-modal"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button 
+            className="auth-close-btn"
+            onClick={() => setShowAuthModal(false)}
+          >
+            ✕
+          </button>
+          
+          <div className="auth-header">
+            <h2>{authMode === 'login' ? 'Masuk ke ASQI' : 'Daftar ASQI'}</h2>
+            <p>{authMode === 'login' ? 'Selamat datang kembali!' : 'Bergabunglah dengan ASQI sekarang!'}</p>
+          </div>
+
+          <div className="auth-tabs">
+            <button 
+              className={`auth-tab ${authMode === 'login' ? 'active' : ''}`}
+              onClick={() => setAuthMode('login')}
+            >
+              Masuk
+            </button>
+            <button 
+              className={`auth-tab ${authMode === 'register' ? 'active' : ''}`}
+              onClick={() => setAuthMode('register')}
+            >
+              Daftar
+            </button>
+          </div>
+
+          <div className="auth-content">
+            {authMode === 'login' ? (
+              <form className="auth-form" onSubmit={handleLogin}>
+                <div className="form-group">
+                  <input
+                    type="email"
+                    placeholder="Email atau nomor telepon"
+                    value={loginData.email}
+                    onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <input
+                    type="password"
+                    placeholder="Kata sandi"
+                    value={loginData.password}
+                    onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                    required
+                  />
+                </div>
+                <button type="submit" className="auth-submit-btn">
+                  Masuk
+                </button>
+                <div className="auth-divider">
+                  <span>atau</span>
+                </div>
+                <button type="button" className="auth-facebook-btn" onClick={handleFacebookAuth}>
+                  <span className="facebook-icon">f</span>
+                  Lanjutkan dengan Facebook
+                </button>
+              </form>
+            ) : (
+              <form className="auth-form" onSubmit={handleRegister}>
+                <div className="form-group">
+                  <input
+                    type="text"
+                    placeholder="Nama lengkap"
+                    value={registerData.fullName}
+                    onChange={(e) => setRegisterData({...registerData, fullName: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={registerData.email}
+                    onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <input
+                    type="password"
+                    placeholder="Kata sandi"
+                    value={registerData.password}
+                    onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <input
+                    type="password"
+                    placeholder="Konfirmasi kata sandi"
+                    value={registerData.confirmPassword}
+                    onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
+                    required
+                  />
+                </div>
+                <button type="submit" className="auth-submit-btn">
+                  Daftar
+                </button>
+                <div className="auth-divider">
+                  <span>atau</span>
+                </div>
+                <button type="button" className="auth-facebook-btn" onClick={handleFacebookAuth}>
+                  <span className="facebook-icon">f</span>
+                  Daftar dengan Facebook
+                </button>
+              </form>
+            )}
+
+            <div className="auth-footer">
+              {authMode === 'login' ? (
+                <p>
+                  Tidak punya akun?{' '}
+                  <button type="button" className="auth-switch-btn" onClick={switchAuthMode}>
+                    Daftar
+                  </button>
+                </p>
+              ) : (
+                <p>
+                  Sudah punya akun?{' '}
+                  <button type="button" className="auth-switch-btn" onClick={switchAuthMode}>
+                    Masuk
+                  </button>
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
+  // SEMUA FUNGSI RENDER KEMBALI DITAMBAHKAN
   const renderShuttleBooking = () => (
-    <div className="shuttle-booking">
+    <div className="service-booking-container">
       <div className="booking-header">
         <button className="back-btn" onClick={() => setSelectedService(null)}>
           ← Kembali
@@ -207,7 +407,7 @@ function App() {
   )
 
   const renderAirportShuttle = () => (
-    <div className="service-booking">
+    <div className="service-booking-container">
       <div className="booking-header">
         <button className="back-btn" onClick={() => setSelectedService(null)}>
           ← Kembali
@@ -279,7 +479,7 @@ function App() {
   )
 
   const renderKirimPaket = () => (
-    <div className="service-booking">
+    <div className="service-booking-container">
       <div className="booking-header">
         <button className="back-btn" onClick={() => setSelectedService(null)}>
           ← Kembali
@@ -340,7 +540,7 @@ function App() {
   )
 
   const renderBusAKAP = () => (
-    <div className="service-booking">
+    <div className="service-booking-container">
       <div className="booking-header">
         <button className="back-btn" onClick={() => setSelectedService(null)}>
           ← Kembali
@@ -411,7 +611,7 @@ function App() {
   )
 
   const renderBusMalam = () => (
-    <div className="service-booking">
+    <div className="service-booking-container">
       <div className="booking-header">
         <button className="back-btn" onClick={() => setSelectedService(null)}>
           ← Kembali
@@ -440,7 +640,7 @@ function App() {
             <span className="feature-icon">🛌</span>
             <div>
               <h5>Selimut</h5>
-              <p>Selimut bersia untuk kenyamanan tidur Anda</p>
+              <p>Selimut bersih untuk kenyamanan tidur Anda</p>
             </div>
           </div>
         </div>
@@ -485,7 +685,7 @@ function App() {
   )
 
   const renderTransJawa = () => (
-    <div className="service-booking">
+    <div className="service-booking-container">
       <div className="booking-header">
         <button className="back-btn" onClick={() => setSelectedService(null)}>
           ← Kembali
@@ -581,7 +781,7 @@ function App() {
     const totalPrice = selectedVehicleData ? (selectedVehicleData.basePrice + 200000) * rentalDays : 0
 
     return (
-      <div className="sewa-armada-booking">
+      <div className="service-booking-container">
         <div className="booking-header">
           <button className="back-btn" onClick={() => setSelectedService(null)}>
             ← Kembali
@@ -658,6 +858,72 @@ function App() {
     )
   }
 
+  // Render ASQI Care yang sangat keren
+  const renderAsqiCare = () => (
+    <div className="asqi-care-container">
+      <div className="care-hero">
+        <h2>ASQI Care</h2>
+        <p>Kami selalu siap membantu perjalanan Anda dengan layanan terbaik 24/7</p>
+      </div>
+
+      <div className="care-services-grid">
+        {careServices.map(service => (
+          <div key={service.id} className="care-service-card" style={{ '--card-color': service.color }}>
+            <div className="care-service-icon">{service.icon}</div>
+            <h3>{service.title}</h3>
+            <p>{service.description}</p>
+            {service.phone && (
+              <div className="care-phone">
+                <span>📞 {service.phone}</span>
+              </div>
+            )}
+            {service.link && (
+              <button className="care-action-btn">{service.link}</button>
+            )}
+            <div className="care-card-decoration"></div>
+          </div>
+        ))}
+      </div>
+
+      <div className="care-extra-info">
+        <div className="care-info-card">
+          <h4>🕒 Jam Operasional</h4>
+          <p>Customer Service: 24/7</p>
+          <p>Live Chat: 06:00 - 24:00 WIB</p>
+        </div>
+        <div className="care-info-card">
+          <h4>📍 Kantor Pusat</h4>
+          <p>Jl. ASQI Travel No. 123</p>
+          <p>Jakarta Pusat, Indonesia</p>
+        </div>
+      </div>
+    </div>
+  )
+
+  // Kalkulasi harga berdasarkan jarak dan jenis layanan
+  const calculatePrice = (from, to, serviceType, vehicleType = null) => {
+    const fromCity = cities.find(city => city.name === from)
+    const toCity = cities.find(city => city.name === to)
+    
+    if (!fromCity || !toCity) return 0
+    
+    const basePrice = Math.abs(fromCity.basePrice - toCity.basePrice) * 1.5
+    
+    switch (serviceType) {
+      case 'shuttle':
+        return Math.max(50000, basePrice)
+      case 'airport-shuttle':
+        return Math.max(75000, basePrice * 1.2)
+      case 'kirim-paket':
+        return Math.max(30000, basePrice * 0.8)
+      case 'sewa-armada':
+        const vehicle = vehicles.find(v => v.id === vehicleType)
+        return vehicle ? vehicle.basePrice + (basePrice * 2) : 0
+      default:
+        return basePrice
+    }
+  }
+
   const renderServiceContent = () => {
     switch(serviceType) {
       case 'airport-shuttle':
@@ -694,17 +960,7 @@ function App() {
           </div>
         )
       case 'asqicare':
-        return (
-          <div className="tab-content">
-            <h2>ASQI Care</h2>
-            <p>Layanan bantuan dan dukungan 24/7</p>
-            <div className="care-options">
-              <button className="care-btn">Hubungi Customer Service</button>
-              <button className="care-btn">FAQ</button>
-              <button className="care-btn">Bantuan Darurat</button>
-            </div>
-          </div>
-        )
+        return renderAsqiCare()
       case 'inbox':
         return (
           <div className="tab-content">
@@ -721,9 +977,12 @@ function App() {
             <h2>Akun Saya</h2>
             <div className="profile-card">
               <div className="profile-pic">👤</div>
-              <h3>Guest User</h3>
-              <p>Silakan login untuk mengakses fitur lengkap</p>
-              <button className="btn-primary" onClick={() => setIsLoggedIn(!isLoggedIn)}>
+              <h3>{isLoggedIn ? 'User ASQI' : 'Guest User'}</h3>
+              <p>{isLoggedIn ? 'Selamat datang di ASQI!' : 'Silakan login untuk mengakses fitur lengkap'}</p>
+              <button 
+                className="btn-primary" 
+                onClick={isLoggedIn ? handleLogout : () => openAuthModal('login')}
+              >
                 {isLoggedIn ? 'Logout' : 'Login'}
               </button>
             </div>
@@ -734,124 +993,126 @@ function App() {
           <>
             {/* Hero Section */}
             <section className="hero">
-              <div className="container">
-                <h2>ASQI</h2>
-                <p>Travel Terpercaya untuk Perjalanan Anda</p>
+              <div className="hero-content">
+                <h2>ASQI TRAVEL</h2>
+                <p>Perjalanan Nyaman & Terjangkau ke Seluruh Indonesia</p>
+                <button className="hero-cta" onClick={handleOrderNow}>
+                  Pesan Sekarang
+                </button>
+              </div>
+              <div className="hero-background-animation"></div>
+            </section>
+
+            {/* Main Services Grid */}
+            <section className="main-services">
+              <h3 className="section-title">Layanan Utama</h3>
+              <div className="main-services-grid">
+                <div className="main-service-card" onClick={() => handleServiceClick('shuttle', 'shuttle')}>
+                  <div className="service-icon-large">🚐</div>
+                  <h4>Shuttle</h4>
+                  <p>Perjalanan antar kota</p>
+                  <div className="service-hover-effect"></div>
+                </div>
+                <div className="main-service-card" onClick={() => handleServiceClick('shuttle', 'airport-shuttle')}>
+                  <div className="service-icon-large">✈️</div>
+                  <h4>Airport Shuttle</h4>
+                  <p>Antar jemput bandara</p>
+                  <div className="service-hover-effect"></div>
+                </div>
+                <div className="main-service-card" onClick={() => handleServiceClick('shuttle', 'kirim-paket')}>
+                  <div className="service-icon-large">📦</div>
+                  <h4>Kirim Paket</h4>
+                  <p>Pengiriman cepat</p>
+                  <div className="service-hover-effect"></div>
+                </div>
+                <div className="main-service-card" onClick={() => handleServiceClick('sewa-armada', 'sewa-armada')}>
+                  <div className="service-icon-large">🚌</div>
+                  <h4>Sewa Armada</h4>
+                  <p>Bus & travel</p>
+                  <div className="service-hover-effect"></div>
+                </div>
+                <div className="main-service-card" onClick={() => handleServiceClick('bus', 'bus-akap')}>
+                  <div className="service-icon-large">🛣️</div>
+                  <h4>Bus AKAP</h4>
+                  <p>Antar kota & provinsi</p>
+                  <div className="service-hover-effect"></div>
+                </div>
+              </div>
+            </section>
+
+            {/* Additional Services dengan Promo Spesial */}
+            <section className="services">
+              <h3 className="section-title">Layanan Lainnya</h3>
+              <div className="services-grid">
+                <div className="service-group">
+                  <div className="service-main-card">
+                    <div className="service-icon">🌙</div>
+                    <h4>ASQA</h4>
+                  </div>
+                  <div className="service-sub-cards">
+                    <div className="service-sub-card" onClick={() => handleServiceClick('bus', 'bus-malam')}>
+                      <span className="sub-icon">🌃</span>
+                      <div>
+                        <h5>Bus Malam</h5>
+                        <p>Perjalanan malam hari</p>
+                      </div>
+                      <span className="arrow">→</span>
+                    </div>
+                    <div className="service-sub-card" onClick={() => handleServiceClick('bus', 'trans-jawa')}>
+                      <span className="sub-icon">🗺️</span>
+                      <div>
+                        <h5>Trans Jawa</h5>
+                        <p>Rute lintas Jawa</p>
+                      </div>
+                      <span className="arrow">→</span>
+                    </div>
+                    <div className="service-sub-card highlight" onClick={() => handleServiceClick('promo', 'special')}>
+                      <span className="sub-icon">⭐</span>
+                      <div>
+                        <h5>Promo Spesial</h5>
+                        <p>Diskon hingga 50%!</p>
+                      </div>
+                      <span className="arrow">→</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
             {/* Promo Section */}
             <section className="promo-section">
-              <div className="container">
-                <div className="promo-card">
-                  <div className="promo-header">
-                    <h3>Bandung - Jakarta</h3>
-                    <span className="duration-badge">6-8 JAM</span>
+              <h3 className="section-title">🔥 Promo Terbatas</h3>
+              <div className="promo-grid">
+                {promos.map(promo => (
+                  <div key={promo.id} className="promo-card">
+                    <div className="promo-badge">{promo.discount} OFF</div>
+                    <div className="promo-header">
+                      <h4>{promo.route}</h4>
+                      <div className="duration-container">
+                        <span className="duration-badge">{promo.duration}</span>
+                      </div>
+                    </div>
+                    <p className="promo-subtitle">{promo.terminal}</p>
+                    <div className="promo-price">
+                      <span className="price-label">Mulai</span>
+                      <span className="price-amount">{promo.price}</span>
+                    </div>
+                    <button className="btn-promo">Pesan Sekarang</button>
                   </div>
-                  <p className="promo-subtitle">Terminal Leuwipanjang → Terminal Pulogadung</p>
-                  <div className="promo-price">
-                    <span className="price-label">Hanya</span>
-                    <span className="price-amount">60.000RP</span>
-                  </div>
-                  <button className="btn-promo">Coba Sekarang</button>
-                </div>
-              </div>
-            </section>
-
-            {/* Services Section */}
-            <section className="services">
-              <div className="container">
-                <h3 className="section-title">Layanan Kami</h3>
-                <div className="services-grid">
-                  {/* Shuttle Group */}
-                  <div className="service-group">
-                    <div className="service-main-card" onClick={() => handleServiceClick('shuttle', 'shuttle')}>
-                      <div className="service-icon">🚐</div>
-                      <h4>Shuttle</h4>
-                      <span className="service-arrow">→</span>
-                    </div>
-                    <div className="service-sub-cards">
-                      <div className="service-sub-card" onClick={() => handleServiceClick('shuttle', 'airport-shuttle')}>
-                        <span className="sub-icon">✈️</span>
-                        <div>
-                          <h5>Airport Shuttle</h5>
-                          <p>Layanan antar jemput bandara</p>
-                        </div>
-                        <span className="arrow">→</span>
-                      </div>
-                      <div className="service-sub-card" onClick={() => handleServiceClick('shuttle', 'kirim-paket')}>
-                        <span className="sub-icon">📦</span>
-                        <div>
-                          <h5>Kirim Paket</h5>
-                          <p>Pengiriman paket cepat</p>
-                        </div>
-                        <span className="arrow">→</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Sewa Armada Group */}
-                  <div className="service-group">
-                    <div className="service-main-card" onClick={() => handleServiceClick('sewa-armada', 'sewa-armada')}>
-                      <div className="service-icon">🚌</div>
-                      <h4>Sewa Armada</h4>
-                      <span className="service-arrow">→</span>
-                    </div>
-                    <div className="service-sub-cards">
-                      <div className="service-sub-card" onClick={() => handleServiceClick('bus', 'bus-akap')}>
-                        <span className="sub-icon">🛣️</span>
-                        <div>
-                          <h5>Bus AKAP</h5>
-                          <p>Bus Antar Kota Antar Provinsi</p>
-                        </div>
-                        <span className="arrow">→</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ASQA Group */}
-                  <div className="service-group">
-                    <div className="service-main-card">
-                      <div className="service-icon">🌙</div>
-                      <h4>ASQA</h4>
-                    </div>
-                    <div className="service-sub-cards">
-                      <div className="service-sub-card" onClick={() => handleServiceClick('bus', 'bus-malam')}>
-                        <span className="sub-icon">🌃</span>
-                        <div>
-                          <h5>Bus Malam</h5>
-                          <p>Perjalanan malam hari</p>
-                        </div>
-                        <span className="arrow">→</span>
-                      </div>
-                      <div className="service-sub-card" onClick={() => handleServiceClick('bus', 'trans-jawa')}>
-                        <span className="sub-icon">🗺️</span>
-                        <div>
-                          <h5>Trans Jawa</h5>
-                          <p>Rute lintas Jawa</p>
-                        </div>
-                        <span className="arrow">→</span>
-                      </div>
-                      <div className="service-sub-card highlight">
-                        <span className="sub-icon">⭐</span>
-                        <div>
-                          <h5>Promo Spesial</h5>
-                          <p>Bisa di pesan sekorang!</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
             </section>
 
             {/* CTA Section */}
             <section className="cta">
-              <div className="container">
+              <div className="cta-content">
                 <h3>Siap Memulai Perjalanan?</h3>
                 <p>Pesan sekarang dan dapatkan pengalaman travel terbaik</p>
-                <button className="btn-order">Order Now</button>
+                <button className="btn-order" onClick={handleOrderNow}>
+                  Order Now
+                </button>
               </div>
+              <div className="cta-background-animation"></div>
             </section>
           </>
         )
@@ -860,36 +1121,41 @@ function App() {
 
   return (
     <div className="app">
-      {/* Header dengan Search di sebelah tombol auth */}
+      {/* Auth Modal */}
+      <AuthModal />
+
+      {/* Header */}
       <header className="header">
-        <div className="container">
-          <div className="header-content">
-            <h1 className="logo">ASQI</h1>
-            <div className="header-right">
-              {/* Search Bar di Header */}
-              <div className={`header-search ${isSearchFocused ? 'focused' : ''}`}>
-                <input 
-                  type="text" 
-                  placeholder="Type here to search..."
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
-                  className="search-input"
-                />
-                <button className="search-btn">🔍</button>
-              </div>
-              
-              <div className="auth-buttons">
-                {isLoggedIn ? (
-                  <span className="welcome-text">Welcome User!</span>
-                ) : (
-                  <>
-                    <button className="btn-secondary">Daftar Membership</button>
-                    <button className="btn-primary">Daftar / Login</button>
-                  </>
-                )}
-              </div>
+        <div className="header-content">
+          <h1 className="logo">ASQI</h1>
+          <div className="header-right">
+            {/* Search Bar di Header */}
+            <div className={`header-search ${isSearchFocused ? 'focused' : ''}`}>
+              <input 
+                type="text" 
+                placeholder="Cari tujuan atau layanan..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                className="search-input"
+              />
+              <button className="search-btn">🔍</button>
+            </div>
+            
+            <div className="auth-buttons">
+              {isLoggedIn ? (
+                <div className="user-welcome">
+                  <span className="welcome-text">Welcome, User!</span>
+                </div>
+              ) : (
+                <button 
+                  className="btn-login-large" 
+                  onClick={() => openAuthModal('login')}
+                >
+                  Login / Daftar
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -897,7 +1163,7 @@ function App() {
 
       {/* Main Content */}
       <main className="main-content">
-        <div className="container">
+        <div className="content-wrapper">
           {renderContent()}
         </div>
       </main>
@@ -956,14 +1222,9 @@ function App() {
           }}
         >
           <span className="nav-icon">👤</span>
-          <span className="nav-label">Akun Saya</span>
+          <span className="nav-label">Akun</span>
         </button>
       </nav>
-
-      {/* Mobile Notice */}
-      <div className="mobile-notice">
-        <p>📱 Untuk pengalaman terbaik, buka web ini di perangkat seluler.</p>
-      </div>
     </div>
   )
 }
